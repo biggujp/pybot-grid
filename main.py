@@ -33,11 +33,11 @@ def close_all_orders(symbol):
             "type": order_type,
             "position": position.ticket,
             "price": mt5.symbol_info_tick(symbol).bid if order_type == mt5.ORDER_TYPE_SELL else mt5.symbol_info_tick(symbol).ask,
-            "deviation": 10,
+            "deviation": 20,
             "magic": 234000,
             "comment": "Close all orders",
             "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": mt5.ORDER_FILLING_RETURN,
+            "type_filling": mt5.ORDER_FILLING_IOC,
         }
         result = mt5.order_send(request)
         if result.retcode != mt5.TRADE_RETCODE_DONE:
@@ -62,51 +62,64 @@ def get_historical_data(symbol, timeframe, n=100):
 
 # Function to place a buy order
 def place_buy_order(symbol, lot_size, price, stop_loss, take_profit):
+    sl = price - stop_loss 
+
+    tp = price + take_profit 
+
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": symbol,
         "volume": lot_size,
-        "type": mt5.ORDER_TYPE_BUY,
+        "type": mt5.ORDER_TYPE_BUY_LIMIT,
         "price": price,
-        "sl": price - stop_loss * 0.0001,
-        "tp": price + take_profit * 0.0001,
-        "deviation": 10,
+        "sl": sl,
+        "tp": tp,
+        "deviation": 20,
         "magic": 234000,
         "comment": "Grid strategy buy",
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
     result = mt5.order_send(request)
-    return result
+    return print(result)
 
 # Function to place a sell order
 def place_sell_order(symbol, lot_size, price, stop_loss, take_profit):
+    sl = price + stop_loss 
+
+    tp = price - take_profit 
+
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": symbol,
         "volume": lot_size,
-        "type": mt5.ORDER_TYPE_SELL,
+        "type": mt5.ORDER_TYPE_SELL_LIMIT,
         "price": price,
-        "sl": price + stop_loss * 0.0001,
-        "tp": price - take_profit * 0.0001,
-        "deviation": 10,
+        "sl": sl,
+        "tp": tp,
+        "deviation": 20,
         "magic": 234000,
         "comment": "Grid strategy sell",
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
     result = mt5.order_send(request)
-    return result
+    return print(result)
 
 # Main trading loop
 while True:
     # Get the latest data
     data = get_historical_data(symbol, timeframe)
     last_close = data['close'].iloc[-1]
-    print(data)
-    for i in range(1, 6):
-        buy_price = last_close - i * grid_size * 0.0001
-        place_buy_order(symbol, lot_size, buy_price, stop_loss, take_profit)
+
+    buy_price = last_close * grid_size 
+    sell_price = last_close * grid_size 
+    
+    place_buy_order(symbol, lot_size, buy_price, stop_loss, take_profit)
+    place_sell_order(symbol, lot_size, sell_price, stop_loss, take_profit)
+    break
+ 
+
     # last_close = data['close'].iloc[-1]
 
     # # Place grid orders
